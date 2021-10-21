@@ -1,23 +1,25 @@
+# frozen_string_literal: true
+
 require 'active_support'
 require 'active_support/core_ext'
 require 'rest-client'
 require 'nokogiri'
 require 'yaml'
 require 'openssl'
-require "aliyun_iot/version"
-require "aliyun_iot/queue"
-require "aliyun_iot/topic"
-require "aliyun_iot/message"
-require "aliyun_iot/product"
-require "aliyun_iot/result"
+require 'aliyun_iot/version'
+require 'aliyun_iot/queue'
+require 'aliyun_iot/topic'
+require 'aliyun_iot/message'
+require 'aliyun_iot/product'
+require 'aliyun_iot/result'
 
 class Hash
-  def self.xml_array content, *path
+  def self.xml_array(content, *path)
     o = xml_object(content, *path)
-    return (o.is_a?(Array) ? o : [o]).reject { |n| n.empty? }
+    (o.is_a?(Array) ? o : [o]).reject(&:empty?)
   end
 
-  def self.xml_object content, *path
+  def self.xml_object(content, *path)
     h = from_xml(content)
     path.reduce(h) { |memo, node| memo = memo[node] || {} }
   end
@@ -28,17 +30,17 @@ module AliyunIot
   class << self
     def configuration
       @configuration ||= begin
-        if defined? Rails
-          config_file = Rails.root.join("config/aliyun_iot.yml")
-        else
-          config_file = File.expand_path('../../config/aliyun_iot.yml',  __FILE__)
-        end
+        config_file = if defined? Rails
+                        Rails.root.join('config/aliyun_iot.yml')
+                      else
+                        File.expand_path('../config/aliyun_iot.yml', __dir__)
+                      end
 
-        if (File.exist?(config_file))
-          config = YAML.load(ERB.new(File.new(config_file).read).result)
+        if File.exist?(config_file)
+          config = YAML.safe_load(ERB.new(File.new(config_file).read).result)
           config = config[Rails.env] if defined? Rails
         end
-        OpenStruct.new(config || {access_id: "", key: "", region: "", product_key: "", owner_id: ""})
+        OpenStruct.new(config || { access_id: '', key: '', region: '', product_key: '', owner_id: '' })
       end
     end
 
